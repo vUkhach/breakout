@@ -21,6 +21,8 @@ namespace breakout
         private DispatcherTimer gameTimer;
         private Ball ball = new Ball(100,100);
         private Ellipse ballShape;
+        private Paddle paddle = new Paddle(200, 400);
+        private Rectangle paddleShape;
         public MainWindow()
         {
             InitializeComponent();
@@ -29,12 +31,15 @@ namespace breakout
             gameTimer.Interval = TimeSpan.FromMilliseconds(16);
             gameTimer.Tick += GameLoop;
             gameTimer.Start();
-        
+            this.MouseMove += OnMouseMove;
         }
 
         private void GameLoop(object sender, EventArgs e)
         {
             ball.Move();
+            CheckWallCollision();
+
+            DrawPaddle();
             DrawBall();
         }
 
@@ -54,6 +59,45 @@ namespace breakout
 
             Canvas.SetLeft(ballShape, ball.X);
             Canvas.SetTop(ballShape, ball.Y);
+        }
+
+        private void CheckWallCollision()
+        {
+            double width = GameCanvas.ActualWidth;
+            double height = GameCanvas.ActualHeight;
+
+            if (ball.X <=0 || ball.X + ball.Size >=width) ball.BounceX();
+
+            if (ball.Y <= 0) ball.BounceY();
+
+            if(ball.Y + ball.Size >= height)
+            {
+                //ball.BounceY();
+            }
+        }
+
+        private void OnMouseMove(object sender, MouseEventArgs e)
+        {
+            double mouseX = e.GetPosition(GameCanvas).X;
+            paddle.MoveTo(mouseX, GameCanvas.ActualWidth);
+        }
+
+        private void DrawPaddle()
+        {
+            if(paddleShape == null)
+            {
+                paddleShape = new Rectangle
+                {
+                    Width = paddle.Width,
+                    Height = paddle.Heigth,
+                    Fill = Brushes.White
+                };
+
+                GameCanvas.Children.Add(paddleShape);
+            }
+
+            Canvas.SetLeft(paddleShape, paddle.X);
+            Canvas.SetTop(paddleShape, paddle.Y);
         }
     }
 }
