@@ -44,5 +44,17 @@ namespace breakout
         {
             dy = -dy;
         }
+
+        public void SetPosition(double newX, double newY)
+        {
+            x = newX;
+            y = newY;
+        }
+
+        public void SetDirection(double newDx, double newDy)
+        {
+            dx = newDx;
+            dy = newDy;
+        }
     }
 }
