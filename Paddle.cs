@@ -12,7 +12,7 @@ namespace breakout
 
         public double Y { get; }
         public double Width {  get; }
-        public double Heigth { get; }
+        public double Height { get; }
 
         public double X => x;
 
@@ -22,7 +22,7 @@ namespace breakout
             Y = startY;
 
             Width = 100;
-            Heigth = 15;
+            Height = 15;
         }
 
 

@@ -56,5 +56,18 @@ namespace breakout
             dx = newDx;
             dy = newDy;
         }
+
+        public void IncreaseSpeed(double newSpeed)
+        {
+            double length = Math.Sqrt(dx * dx + dy * dy);
+
+            dx = (dx / length) * newSpeed;
+            dy = (dy / length) * newSpeed;
+        }
+
+        public double GetSpeed()
+        {
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
     }
 }

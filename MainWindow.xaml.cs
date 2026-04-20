@@ -22,11 +22,13 @@ namespace breakout
         private DispatcherTimer gameTimer;
         private Ball ball;
         private Ellipse ballShape;
-        private Paddle paddle = new Paddle(200, 400);
+        private Paddle paddle;
         private Rectangle paddleShape;
         private List<Block> blocks = new List<Block>();
         private List<Rectangle> blockShapes = new List<Rectangle>();
         private int score = 0;
+        private int lives = 3;
+        private double currentSpeed = 1;
         public MainWindow()
         {
             InitializeComponent();
@@ -36,8 +38,14 @@ namespace breakout
 
         private void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
+            double canvasHeight = GameCanvas.ActualHeight;
+            double canvasWidth = GameCanvas.ActualWidth;
+
+            paddle = new Paddle(canvasWidth / 2 - 50, canvasHeight - 40);
+
             CreateBlocks();
             SpawnBall();
+            UpdateLivesPanel();
 
             gameTimer = new DispatcherTimer();
             gameTimer.Interval = TimeSpan.FromMilliseconds(16);
@@ -56,7 +64,8 @@ namespace breakout
             DrawBall();
             DrawPaddle();
             DrawBlocks();
-            ScoreText.Text = $"Score: {score}";
+            ScoreText.Text = $"{score}";
+            SpeedText.Text = $"{currentSpeed}";
             CheckWin();
             CheckLoose();
         }
@@ -82,7 +91,7 @@ namespace breakout
         private void SpawnBall()
         {
             double startX = paddle.X + paddle.Width / 2;
-            double startY = paddle.Y - 10;
+            double startY = paddle.Y - 15;
             Random rand = new Random();
             double dx = rand.NextDouble() * 4 - 2;
 
@@ -118,11 +127,11 @@ namespace breakout
             double paddleRight = paddle.X + paddle.Width;
 
             if (ballBottom >= paddleTop &&
-                ball.Y <= paddleTop + paddle.Heigth &&
+                ball.Y <= paddleTop + paddle.Height &&
                 ballRight >= paddleLeft &&
                 ballLeft <= paddleRight) 
             {
-                HandleCollision(paddle.X, paddle.Y, paddle.Width, paddle.Heigth, true);
+                HandleCollision(paddle.X, paddle.Y, paddle.Width, paddle.Height, true);
                 ball.SetPosition(ball.X, paddle.Y - ball.Size);
             }
         }
@@ -144,8 +153,17 @@ namespace breakout
                     block.Destroy();
                     score += 10;
                     ball.BounceY();
+
+                    if (score % 50 == 0 && score != 0)
+                    {
+                        ball.IncreaseSpeed(ball.GetSpeed() + 1);
+                        currentSpeed += 1;
+                    }
+
                     break;
                 }
+
+                
             }
         }
 
@@ -162,8 +180,10 @@ namespace breakout
                 paddleShape = new Rectangle
                 {
                     Width = paddle.Width,
-                    Height = paddle.Heigth,
-                    Fill = Brushes.White
+                    Height = paddle.Height,
+                    Fill = Brushes.White,
+                    RadiusX = 5,
+                    RadiusY = 5
                 };
 
                 GameCanvas.Children.Add(paddleShape);
@@ -192,12 +212,7 @@ namespace breakout
                     Block block = new Block(startX + j * (blockWidth + paddingX), startY + i * (blockHeight + paddingY));
                     blocks.Add(block);
 
-                    Rectangle rect = new Rectangle
-                    {
-                        Width = block.Width,
-                        Height = block.Height,
-                        Fill = Brushes.LightBlue
-                    };
+                    Rectangle rect = new Rectangle { Width = block.Width, Height = block.Height, Fill = Brushes.White, RadiusX = 4, RadiusY = 4 };
                     Canvas.SetLeft(rect, block.X);
                     Canvas.SetTop(rect, block.Y);
                     blockShapes.Add(rect);
@@ -239,9 +254,17 @@ namespace breakout
 
             if (isPaddle)
             {
+                double speed = ball.GetSpeed();
+
                 double relative = (ballCenterX - objX) / objW;
-                double newDx = (relative - 0.5) * 6;
-                double newDy = -Math.Abs(3);
+
+                double newDx = (relative - 0.5) * 2; 
+                double newDy = -1;
+
+                double length = Math.Sqrt(newDx * newDx + newDy * newDy);
+
+                newDx = (newDx / length) * speed;
+                newDy = (newDy / length) * speed;
 
                 ball.SetDirection(newDx, newDy);
             }
@@ -270,12 +293,26 @@ namespace breakout
 
         private void CheckLoose()
         {
+            if (ball == null) return;
+
             if(ball.Y > GameCanvas.ActualHeight)
             {
-                gameTimer.Stop();
-                MessageBox.Show("You loose");
-                RestartGame();
-                gameTimer.Start();
+                lives--;
+                LivesText.Text = $"{lives}";
+                UpdateLivesPanel();
+
+                if (lives <= 0)
+                {
+                    gameTimer.Stop();
+                    MessageBox.Show($"Game over! Your score: {score}");
+                    lives = 3;
+                    RestartGame();
+                    gameTimer.Start();
+                }
+                else
+                {
+                    SpawnBall();
+                }
             }
         }
 
@@ -289,9 +326,26 @@ namespace breakout
 
             ballShape = null;
             paddleShape = null;
+            currentSpeed = 1;
 
             CreateBlocks();
             SpawnBall();
+        }
+
+        private void UpdateLivesPanel()
+        {
+            LivesPanel.Children.Clear();
+            for (int i = 0; i < 3; i++)
+            {
+                Ellipse heart = new Ellipse
+                {
+                    Width = 12,
+                    Height = 12,
+                    Margin = new Thickness(4, 0, 4, 0),
+                    Fill = i < lives ? Brushes.White : new SolidColorBrush(Color.FromRgb(40, 40, 40))
+                };
+                LivesPanel.Children.Add(heart);
+            }
         }
     }
 }
