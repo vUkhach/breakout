@@ -13,9 +13,11 @@ namespace breakout
         public double Width { get; }
         public double Height { get; }
 
-        public bool IsDestroyed { get; private set; }
+        public int Health { get; private set; }
 
-        public Block(double x, double y)
+        public bool IsDestroyed => Health <= 0;
+
+        public Block(double x, double y, int health)
         {
             X = x;
             Y = y;
@@ -23,13 +25,10 @@ namespace breakout
             Width = 60;
             Height = 20; 
 
-            IsDestroyed = false;
+            Health = health;
         }
 
-        public void Destroy()
-        {
-            IsDestroyed = true;
-        }
+        public void Hit() => Health--;
 
         
     }

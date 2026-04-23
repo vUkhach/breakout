@@ -19,17 +19,17 @@
 
         <Border Grid.Row="0" Background="#111111" BorderBrush="#222222" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20,0">
-                <TextBlock Text="SCORE" Foreground="#555555" FontSize="11" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="SCORE" Foreground="#555555" FontSize="11" FontFamily="Cascadia Code" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBlock Name="ScoreText" Text="0" Foreground="#7eb8f7" FontSize="20" FontFamily="Consolas" FontWeight="Bold" VerticalAlignment="Center"/>
 
                 <Rectangle Width="1" Height="24" Fill="#222222" Margin="30,0"/>
 
-                <TextBlock Text="SPEED" Foreground="#555555" FontSize="11" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="SPEED" Foreground="#555555" FontSize="11" FontFamily="Cascadia Code" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBlock Name="SpeedText" Text="1" Foreground="White" FontSize="20" FontFamily="Consolas" FontWeight="Bold" VerticalAlignment="Center"/>
 
                 <Rectangle Width="1" Height="24" Fill="#222222" Margin="30,0"/>
 
-                <TextBlock Text="LIVES" Foreground="#555555" FontSize="11" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="LIVES" Foreground="#555555" FontSize="11" FontFamily="Cascadia Code" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBlock Name="LivesText" Text="3" Foreground="White" FontSize="20" FontFamily="Consolas" FontWeight="Bold" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>

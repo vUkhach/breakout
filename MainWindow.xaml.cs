@@ -13,10 +13,6 @@ using System.Xml.Serialization;
 
 namespace breakout
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    /// private DispatcherTimer gameTimer;
     public partial class MainWindow : Window
     {
         private DispatcherTimer gameTimer;
@@ -29,6 +25,7 @@ namespace breakout
         private int score = 0;
         private int lives = 3;
         private double currentSpeed = 1;
+        private int gameTime = 0;
         public MainWindow()
         {
             InitializeComponent();
@@ -44,7 +41,7 @@ namespace breakout
             paddle = new Paddle(canvasWidth / 2 - 50, canvasHeight - 40);
 
             CreateBlocks();
-            SpawnBall();
+            SpawnBall(3);
             UpdateLivesPanel();
 
             gameTimer = new DispatcherTimer();
@@ -66,8 +63,10 @@ namespace breakout
             DrawBlocks();
             ScoreText.Text = $"{score}";
             SpeedText.Text = $"{currentSpeed}";
+            LivesText.Text = $"{lives}";
             CheckWin();
             CheckLoose();
+            gameTime += 16;
         }
 
         private void DrawBall()
@@ -88,16 +87,22 @@ namespace breakout
             Canvas.SetTop(ballShape, ball.Y);
         }
 
-        private void SpawnBall()
+        private void SpawnBall(double speed)
         {
             double startX = paddle.X + paddle.Width / 2;
             double startY = paddle.Y - 15;
             Random rand = new Random();
             double dx = rand.NextDouble() * 4 - 2;
+            double dy = -1;
 
             ball = new Ball(startX, startY);
 
-            ball.SetDirection(dx, -3);
+            double length = Math.Sqrt(dx * dx + dy * dy);
+
+            dx = (dx / length) * speed;
+            dy = (dy / length) * speed;
+
+            ball.SetDirection(dx, dy);
         }
 
         private void CheckWallCollision()
@@ -109,10 +114,6 @@ namespace breakout
 
             if (ball.Y <= 0) ball.BounceY();
 
-            if(ball.Y + ball.Size >= height)
-            {
-                //ball.BounceY();
-            }
         }
 
         private void CheckPaddleCollision()
@@ -150,7 +151,7 @@ namespace breakout
 
                 if (collision)
                 {
-                    block.Destroy();
+                    block.Hit();
                     score += 10;
                     ball.BounceY();
 
@@ -205,18 +206,62 @@ namespace breakout
             double startX = 15;
             double startY = 15;
 
-            for(int i = 0; i < rows; i++)
+            Random rand = new Random();
+
+            List<int> indices = new List<int>();
+            int total = rows * cols;
+
+            for (int i = 0; i < total; i++)
+                indices.Add(i);
+
+            indices = indices.OrderBy(x => rand.Next()).ToList();
+
+            var hp2 = indices.Take(7).ToHashSet();
+            var hp3 = indices.Skip(7).Take(5).ToHashSet();
+
+            int index = 0;
+
+            for (int i = 0; i < rows; i++)
             {
-                for(int j = 0; j < cols; j++)
+                for (int j = 0; j < cols; j++)
                 {
-                    Block block = new Block(startX + j * (blockWidth + paddingX), startY + i * (blockHeight + paddingY));
+                    int health = 1;
+
+                    if (hp3.Contains(index))
+                        health = 3;
+                    else if (hp2.Contains(index))
+                        health = 2;
+
+                    Block block = new Block(
+                        startX + j * (blockWidth + paddingX),
+                        startY + i * (blockHeight + paddingY),
+                        health
+                    );
+
                     blocks.Add(block);
 
-                    Rectangle rect = new Rectangle { Width = block.Width, Height = block.Height, Fill = Brushes.White, RadiusX = 4, RadiusY = 4 };
+                    Rectangle rect = new Rectangle
+                    {
+                        Width = block.Width,
+                        Height = block.Height,
+                        RadiusX = 4,
+                        RadiusY = 4
+                    };
+
+                    if (health == 3)
+                        rect.Fill = Brushes.Red;
+                    else if (health == 2)
+                        rect.Fill = Brushes.Orange;
+                    else
+                        rect.Fill = Brushes.White;
+
                     Canvas.SetLeft(rect, block.X);
                     Canvas.SetTop(rect, block.Y);
+
                     blockShapes.Add(rect);
                     GameCanvas.Children.Add(rect);
+
+                    index++;
                 }
             }
         }
@@ -238,6 +283,13 @@ namespace breakout
 
                 Canvas.SetLeft(shape, block.X);
                 Canvas.SetTop(shape, block.Y);
+
+                if (block.Health == 3)
+                    shape.Fill = Brushes.Red;
+                else if (block.Health == 2)
+                    shape.Fill = Brushes.Orange;
+                else
+                    shape.Fill = Brushes.White;
             }
         }
 
@@ -284,15 +336,23 @@ namespace breakout
             if (allDestroyed)
             {
                 gameTimer.Stop();
-                MessageBox.Show("You win");
-                RestartGame();
-                gameTimer.Start();
+
+                var window = new GameOverWindow(score);
+                window.ShowDialog();
+
+                if (window.Restart)
+                {
+                    RestartGame();
+                    gameTimer.Start();
+                    lives = 3;
+                }
                 return;
             }
         }
 
         private void CheckLoose()
         {
+            double speed = ball.GetSpeed();
             if (ball == null) return;
 
             if(ball.Y > GameCanvas.ActualHeight)
@@ -304,14 +364,19 @@ namespace breakout
                 if (lives <= 0)
                 {
                     gameTimer.Stop();
-                    MessageBox.Show($"Game over! Your score: {score}");
-                    lives = 3;
-                    RestartGame();
-                    gameTimer.Start();
+
+                    var window = new GameOverWindow(score);
+                    window.ShowDialog();
+                    if (window.Restart)
+                    {
+                        RestartGame();
+                        gameTimer.Start();
+                        
+                    }
                 }
                 else
                 {
-                    SpawnBall();
+                    SpawnBall(speed);
                 }
             }
         }
@@ -319,7 +384,7 @@ namespace breakout
         private void RestartGame()
         {
             score = 0;
-
+            lives = 3;
             blocks.Clear();
             blockShapes.Clear();
             GameCanvas.Children.Clear();
@@ -327,9 +392,12 @@ namespace breakout
             ballShape = null;
             paddleShape = null;
             currentSpeed = 1;
+            
 
             CreateBlocks();
-            SpawnBall();
+            SpawnBall(3);
+
+            UpdateLivesPanel();
         }
 
         private void UpdateLivesPanel()
