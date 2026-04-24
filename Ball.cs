@@ -70,5 +70,11 @@ namespace breakout
         {
             return Math.Sqrt(dx * dx + dy * dy);
         }
+
+        public void Move(double delta)
+        {
+            x += dx * delta * 60; 
+            y += dy * delta * 60;
+        }
     }
 }

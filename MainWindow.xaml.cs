@@ -25,7 +25,11 @@ namespace breakout
         private int score = 0;
         private int lives = 3;
         private double currentSpeed = 1;
-        private int gameTime = 0;
+        private double gameTime = 0;
+        private double canvasWidth;
+        private double canvasHeight;
+        private int destroyedCount = 0;
+        private TimeSpan lastRenderTime = TimeSpan.Zero;
         public MainWindow()
         {
             InitializeComponent();
@@ -41,8 +45,8 @@ namespace breakout
 
         private void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
-            double canvasHeight = GameCanvas.ActualHeight;
-            double canvasWidth = GameCanvas.ActualWidth;
+            canvasWidth = GameCanvas.ActualWidth;
+            canvasHeight = GameCanvas.ActualHeight;
 
             paddle = new Paddle(canvasWidth / 2 - 50, canvasHeight - 40);
 
@@ -50,16 +54,26 @@ namespace breakout
             SpawnBall(3);
             UpdateLivesPanel();
 
-            gameTimer = new DispatcherTimer();
-            gameTimer.Interval = TimeSpan.FromMilliseconds(16);
-            gameTimer.Tick += GameLoop;
-            gameTimer.Start();
+            CompositionTarget.Rendering += GameLoop;
         }
 
         private void GameLoop(object sender, EventArgs e)
         {
-            ball.Move();
-            
+            var args = (RenderingEventArgs)e;
+
+            if (lastRenderTime == TimeSpan.Zero)
+            {
+                lastRenderTime = args.RenderingTime;
+                return;
+            }
+
+            double delta = (args.RenderingTime - lastRenderTime).TotalSeconds;
+            lastRenderTime = args.RenderingTime;
+
+            if (delta > 0.05) delta = 0.05;
+
+            ball.Move(delta);
+
             CheckWallCollision();
             CheckPaddleCollision();
             CheckBlockCollision();
@@ -67,12 +81,9 @@ namespace breakout
             DrawBall();
             DrawPaddle();
             DrawBlocks();
-            ScoreText.Text = $"{score}";
-            SpeedText.Text = $"{currentSpeed}";
-            LivesText.Text = $"{lives}";
             CheckWin();
             CheckLoose();
-            gameTime += 16;
+            gameTime += (int)(delta * 1000);
         }
 
         private void DrawBall()
@@ -113,13 +124,8 @@ namespace breakout
 
         private void CheckWallCollision()
         {
-            double width = GameCanvas.ActualWidth;
-            double height = GameCanvas.ActualHeight;
-
-            if (ball.X <=0 || ball.X + ball.Size >=width) ball.BounceX();
-
+            if (ball.X <= 0 || ball.X + ball.Size >= canvasWidth) ball.BounceX();
             if (ball.Y <= 0) ball.BounceY();
-
         }
 
         private void CheckPaddleCollision()
@@ -145,39 +151,46 @@ namespace breakout
 
         private void CheckBlockCollision()
         {
-            foreach (var block in blocks)
+            for (int i = 0; i < blocks.Count; i++)
             {
+                var block = blocks[i];
                 if (block.IsDestroyed) continue;
 
-                bool collision = 
-                    ball.X + ball.Size >= block.X && 
-                    ball.X <= block.X + block.Width && 
-                    ball.Y + ball.Size >= block.Y && 
+                bool collision =
+                    ball.X + ball.Size >= block.X &&
+                    ball.X <= block.X + block.Width &&
+                    ball.Y + ball.Size >= block.Y &&
                     ball.Y <= block.Y + block.Height;
 
                 if (collision)
                 {
                     block.Hit();
                     score += 10;
+                    UpdateUI();
                     ball.BounceY();
+                    if (block.IsDestroyed)
+                        destroyedCount++;
+
+                    if (block.Health == 2) blockShapes[i].Fill = Brushes.Orange;
+                    else if (block.Health == 1) blockShapes[i].Fill = Brushes.White;
+                    else if (block.IsDestroyed) blockShapes[i].Visibility = Visibility.Hidden;
 
                     if (score % 50 == 0 && score != 0)
                     {
                         ball.IncreaseSpeed(ball.GetSpeed() + 1);
                         currentSpeed += 1;
+                        UpdateUI();
                     }
 
                     break;
                 }
-
-                
             }
         }
 
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
             double mouseX = e.GetPosition(GameCanvas).X;
-            paddle.MoveTo(mouseX, GameCanvas.ActualWidth);
+            paddle.MoveTo(mouseX, canvasWidth);
         }
 
         private void DrawPaddle()
@@ -276,26 +289,8 @@ namespace breakout
         {
             for (int i = 0; i < blocks.Count; i++)
             {
-                var block = blocks[i];
-                var shape = blockShapes[i];
-
-                if (block.IsDestroyed)
-                {
-                    shape.Visibility = Visibility.Hidden;
-                    continue;
-                }
-
-                shape.Visibility = Visibility.Visible;
-
-                Canvas.SetLeft(shape, block.X);
-                Canvas.SetTop(shape, block.Y);
-
-                if (block.Health == 3)
-                    shape.Fill = Brushes.Red;
-                else if (block.Health == 2)
-                    shape.Fill = Brushes.Orange;
-                else
-                    shape.Fill = Brushes.White;
+                if (blocks[i].IsDestroyed)
+                    blockShapes[i].Visibility = Visibility.Hidden;
             }
         }
 
@@ -337,11 +332,9 @@ namespace breakout
 
         private void CheckWin()
         {
-            bool allDestroyed = blocks.All(b => b.IsDestroyed);
-
-            if (allDestroyed)
+            if (destroyedCount >= blocks.Count)
             {
-                gameTimer.Stop();
+                CompositionTarget.Rendering -= GameLoop;
 
                 var window = new GameOverWindow(score);
                 this.Hide();
@@ -351,7 +344,7 @@ namespace breakout
                 {
                     this.Show();
                     RestartGame();
-                    gameTimer.Start();
+                    CompositionTarget.Rendering += GameLoop;
                 }
                 return;
             }
@@ -362,15 +355,16 @@ namespace breakout
             double speed = ball.GetSpeed();
             if (ball == null) return;
 
-            if(ball.Y > GameCanvas.ActualHeight)
+            if(ball.Y > canvasHeight)
             {
                 lives--;
+                UpdateUI();
                 LivesText.Text = $"{lives}";
                 UpdateLivesPanel();
 
                 if (lives <= 0)
                 {
-                    gameTimer.Stop();
+                    CompositionTarget.Rendering -= GameLoop;
                     SaveResult();
                     var window = new GameOverWindow(score);
                     this.Hide();
@@ -379,7 +373,7 @@ namespace breakout
                     {
                         this.Show();
                         RestartGame();
-                        gameTimer.Start();                        
+                        CompositionTarget.Rendering += GameLoop;
                     }
                 }
                 else
@@ -393,6 +387,8 @@ namespace breakout
         {
             score = 0;
             lives = 3;
+            destroyedCount = 0;
+            gameTime = 0;
             blocks.Clear();
             blockShapes.Clear();
             GameCanvas.Children.Clear();
@@ -431,13 +427,19 @@ namespace breakout
                 var result = new GameResult
                 {
                     Score = score,
-                    TimeSeconds = gameTime / 1000,
+                    TimeSeconds = (int) (gameTime / 1000.0),
                     Date = DateTime.Now
                 };
 
                 db.Results.Add(result);
                 db.SaveChanges();
             }
+        }
+        private void UpdateUI()
+        {
+            ScoreText.Text = $"{score}";
+            SpeedText.Text = $"{currentSpeed}";
+            LivesText.Text = $"{lives}";
         }
     }
 }
