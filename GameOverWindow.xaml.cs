@@ -35,7 +35,8 @@ namespace breakout
 
         private void Table_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Table coming soon 😄");
+            LeaderboardWindow window = new LeaderboardWindow();
+            window.ShowDialog();
         }
     }
 }

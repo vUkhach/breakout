@@ -29,6 +29,12 @@ namespace breakout
         public MainWindow()
         {
             InitializeComponent();
+
+            using (var db = new GameDbContext())
+            {
+                db.Database.EnsureCreated();
+            }
+
             this.Loaded += OnWindowLoaded; 
             this.MouseMove += OnMouseMove;
         }

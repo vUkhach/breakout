@@ -1,0 +1,49 @@
+﻿<Window x:Class="breakout.LeaderboardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Leaderboard"
+        Height="400" Width="400"
+        Background="#0a0a0a"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="10">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="LEADERBOARD"
+                   Foreground="#7eb8f7"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,10" FontFamily="Cascadia Code"/>
+
+        <DataGrid Name="ResultsGrid"
+          Grid.Row="1"
+          AutoGenerateColumns="False"
+          Background="#111"
+          Foreground="White"
+          FontFamily="Cascadia Code"
+          RowBackground="#1a1a1a"
+          AlternatingRowBackground="#222"
+          HeadersVisibility="Column"
+          IsReadOnly="True">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="*"/>
+                <DataGridTextColumn Header="Time (s)" Binding="{Binding TimeSeconds}" Width="*"/>
+                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="*"/>
+            </DataGrid.Columns>
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Background" Value="#111"/>
+                    <Setter Property="Foreground" Value="#7eb8f7"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+        </DataGrid>
+
+    </Grid>
+</Window>

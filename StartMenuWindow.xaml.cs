@@ -29,7 +29,8 @@ namespace breakout
 
         private void Leaderboard_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Leaderboard coming soon 😄");
+            LeaderboardWindow window = new LeaderboardWindow();
+            window.ShowDialog();
         }
     }
 }
